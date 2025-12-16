@@ -1,0 +1,17 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.5.1
+_src_path: https://github.com/jupyterlab/extension-template
+author_email: ellisonbg@gmail.com
+author_name: Brian Granger
+create_claude_symlink: true
+create_gemini_symlink: true
+has_ai_rules: true
+has_binder: false
+has_settings: false
+kind: frontend-and-server
+labextension_name: jupyterlab-braket-devices
+project_short_description: A JupyterLab extension for Amazon Braket Devices
+python_name: jupyterlab_braket_devices
+repository: https://github.com/ellisonbg/jupyterlab-braket-devices
+test: true
+
