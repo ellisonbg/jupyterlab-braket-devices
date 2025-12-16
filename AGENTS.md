@@ -423,17 +423,40 @@ export async function fetchData(): Promise<string> {
 
 ## Development Workflow
 
-### Environment Activation (CRITICAL)
+### Environment Setup and Activation
 
-**Before ANY command**, ensure you're in the correct environment:
+This project **recommends using Pixi** for development as it manages both Python and Node.js dependencies in a unified environment.
+
+#### Using Pixi (Recommended)
+
+**No activation needed!** Simply use `pixi run <command>` or `pixi run <task-name>` for any command. Pixi automatically activates the environment.
 
 ```bash
-# For conda/mamba/micromamba (replace `conda` with `mamba` or `micromamba` depending on the prompter's preferred tool):
+# Examples:
+pixi run build          # Run the build task
+pixi run lab            # Start JupyterLab
+pixi run jlpm install   # Run jlpm commands
+pixi run pytest         # Run Python tests
+
+# Or open a shell with the environment activated:
+pixi shell
+```
+
+#### Using Traditional Environments (Alternative)
+
+If you're not using Pixi, **you must activate your environment before ANY command**:
+
+```bash
+# For conda/mamba/micromamba:
 conda activate <environment-name>
 
 # For venv:
 source <path-to-venv>/bin/activate  # On macOS/Linux
 <path-to-venv>\Scripts\activate.bat # On Windows
+
+# For UV:
+source .venv/bin/activate  # On macOS/Linux (after 'uv venv')
+.venv\Scripts\activate.bat # On Windows
 ```
 
 **All `jlpm`, `pip`, and `jupyter` commands MUST run within the activated environment.**
@@ -451,36 +474,46 @@ source <path-to-venv>/bin/activate  # On macOS/Linux
 
 ### Complete Development Workflow Checklist
 
-**When implementing a new feature from scratch, follow this complete sequence:**
+**When implementing a new feature from scratch:**
 
-1. **Activate environment** (see above — required first!)
-2. **Write the code** (TypeScript in `src/`, styles in `style/`, Python in `jupyterlab_braket_devices/`)
-3. **Install dependencies** (if you added any to `package.json`):
+#### With Pixi (Recommended)
+
+1. **Write your code** (TypeScript in `src/`, styles in `style/`, Python in `jupyterlab_braket_devices/`)
+2. **Install new dependencies** (if you added any):
    ```bash
-   jlpm install
+   pixi run jlpm install  # For package.json changes
    ```
-4. **Build the extension**:
+3. **Build the extension**:
+   ```bash
+   pixi run build
+   ```
+4. **Start JupyterLab and test**:
+   ```bash
+   pixi run lab
+   ```
+5. **Verify** the feature works in your browser
+
+**Note**: The extension is already registered during initial setup. You only need to build and restart JupyterLab.
+
+#### With Traditional Environments
+
+1. **Activate your environment** (conda/venv/UV)
+2. **Write your code**
+3. **Install new dependencies** (if any):
+   ```bash
+   jlpm install  # For package.json changes
+   ```
+4. **Build**:
    ```bash
    jlpm build
    ```
-5. **Install the extension** (REQUIRED for JupyterLab to recognize it):
-   ```bash
-   pip install -e .
-   jupyter labextension develop . --overwrite
-   jupyter server extension enable jupyterlab_braket_devices
-   ```
-6. **Verify installation**:
-   ```bash
-   jupyter labextension list  # Should show your extension as "enabled" and "OK"
-   jupyter server extension list  # Should show backend extension
-   ```
-7. **Start JupyterLab**:
+5. **Start JupyterLab**:
    ```bash
    jupyter lab
    ```
-8. **Test the feature** in your browser
+6. **Verify** in browser
 
-**Critical: Steps 5-7 are REQUIRED after building. Building alone is not enough!**
+**Critical**: Building compiles your code, but JupyterLab must be restarted to load the changes!
 
 ---
 
@@ -494,7 +527,7 @@ Many issues arise from confusing these two steps:
 - **Output**: Creates files in `lib/` and `jupyterlab_braket_devices/labextension/`
 - **What it does NOT do**: Register the extension with JupyterLab
 
-#### `pip install -e .` + `jupyter labextension develop .` — Registers the Extension. Do this once as a setup step.
+#### `pip install -e .` (or `pixi run pip install -e .`) + `jupyter labextension develop .` — Registers the Extension. Do this once as a setup step.
 
 - **What it does**: Tells JupyterLab where to find your extension
 - **Output**: Creates symlinks so changes are reflected
@@ -509,61 +542,134 @@ Many issues arise from confusing these two steps:
 
 ### Initial Setup (run once)
 
+#### Using Pixi (Recommended)
+
+This project includes a `pixi.toml` configuration with predefined tasks for common operations.
+
 ```bash
+# Install all dependencies
+pixi install
+
+# Install the extension in development mode
+pixi run jupyter labextension develop . --overwrite
+
+# Build the frontend extension
+pixi run jlpm install
+pixi run jlpm build
+```
+
+**Available Pixi tasks:**
+- `pixi run build` - Build the extension
+- `pixi run lab` - Start JupyterLab
+- `pixi run test` - Run Python tests
+- `pixi run lint` - Lint the code
+
+#### Using Traditional Environments (Alternative)
+
+```bash
+# Create and activate environment (choose one):
+python -m venv .venv && source .venv/bin/activate  # venv
+# conda create -n myenv python=3.10 && conda activate myenv  # conda
+# uv venv && source .venv/bin/activate  # UV
+
+# Install dependencies
 pip install -e ".[dev,test]"
+jlpm install
+
+# Register extension with JupyterLab
 jupyter labextension develop . --overwrite
 jupyter server extension enable jupyterlab_braket_devices
+
+# Build
+jlpm build
 ```
 
 ### Iterative Development
 
-**Development with auto-rebuild** (recommended):
+#### Development with Auto-Rebuild (Recommended)
 
+The most efficient workflow uses watch mode to automatically rebuild on file changes:
+
+**With Pixi:**
 ```bash
-jlpm run watch                      # Auto-rebuild on file changes (keep running)
-# In another terminal:
+# Terminal 1: Auto-rebuild on changes
+pixi run watch
+
+# Terminal 2: Run JupyterLab
+pixi run lab
+```
+
+**With Traditional Environments:**
+```bash
+# Terminal 1: Auto-rebuild on changes
+jlpm run watch
+
+# Terminal 2: Run JupyterLab
 jupyter lab
 ```
 
+#### After Making Changes
+
 **After editing TypeScript** (files in `src/`):
-
-- If using `jlpm run watch`: Just **refresh your browser** (Cmd+R / Ctrl+R)
-- If not using watch: Run `jlpm build`, then **refresh your browser**
-
-**Quick TypeScript validation** (optional, for fast feedback):
-
-```bash
-npx tsc --noEmit src/index.ts       # Check single file
-```
+- If using watch mode: Simply **refresh your browser** (Cmd+R / Ctrl+R)
+- If not using watch:
+  - Pixi: Run `pixi run build`, then **refresh browser**
+  - Traditional: Run `jlpm build`, then **refresh browser**
 
 **After editing Python** (files in `jupyterlab_braket_devices/`):
-
-- **Restart the JupyterLab server** (Ctrl+C in terminal, then `jupyter lab` again)
+- **Restart the JupyterLab server** (Ctrl+C, then `pixi run lab` or `jupyter lab` again)
 - No rebuild needed!
-- Only run `pip install -e .` if you changed package structure (renamed package directory, or modified entry points in `pyproject.toml`)
+- Only re-run installation (`pixi install` or `pip install -e .`) if you changed package structure in `pyproject.toml`
+
+**Quick TypeScript validation** (optional):
+```bash
+# Pixi:
+pixi run npx tsc --noEmit src/index.ts
+
+# Traditional:
+npx tsc --noEmit src/index.ts
+```
 
 **Memory aid**: "What did you change? Restart that!"
-
-- Changed **JavaScript** → Build (or auto-builds with watch) → **Refresh browser**
+- Changed **JavaScript/TypeScript** → Build (or auto-rebuilds with watch) → **Refresh browser**
 - Changed **Python** → **Restart JupyterLab server** (no build needed)
 
 ### Debugging and Diagnostics
 
+#### Check Extension Installation
+
 ```bash
-jupyter labextension list           # Check if extension is installed
-jupyter server extension list        # Check backend extension
-jlpm run lint                # Lint frontend code
+# Pixi:
+pixi run jupyter labextension list        # Check frontend extension
+pixi run jupyter server extension list    # Check backend extension
+
+# Traditional:
+jupyter labextension list
+jupyter server extension list
 ```
 
+Your extension should appear as **"enabled"** and **"OK"**.
+
+#### Lint Code
+
+```bash
+# Pixi:
+pixi run lint                # Use defined task
+# Or: pixi run jlpm run lint
+
+# Traditional:
+jlpm run lint
+```
+
+#### Debug in Browser
+
 **Browser console** (ask user to check):
+- Open browser console (F12 or Cmd+Option+I)
+- Look for JavaScript errors or warnings
+- Check for failed network requests to backend endpoints
+- Search for the extension ID (`jupyterlab_braket_devices`) to verify it loaded
 
-- Request user to open browser console (F12 or Cmd+Option+I)
-- Ask user to report any JavaScript errors
-- Ask user to check for failed network requests to backend endpoints
-- Ask user if the extension appears to be loaded
-
-**Server logs** (terminal running `jupyter lab`):
-
+**Server logs** (terminal running JupyterLab):
 - Check for Python errors or exceptions
 - Verify backend routes are registered
 - Look for HTTP request logs
@@ -577,52 +683,78 @@ If your extension doesn't appear in JupyterLab after building:
 **1. Check if the extension is installed:**
 
 ```bash
+# Pixi:
+pixi run jupyter labextension list
+
+# Traditional:
 jupyter labextension list
 ```
 
 Your extension should appear as **"enabled"** and **"OK"**.
 
-**2. If NOT in the list**, run the installation commands:
+**2. If NOT in the list**, re-run installation:
 
 ```bash
-pip install -e .
+# Pixi:
+pixi run jupyter labextension develop . --overwrite
+
+# Traditional:
 jupyter labextension develop . --overwrite
 jupyter server extension enable jupyterlab_braket_devices
 ```
 
 **3. Did you restart JupyterLab?**
+- Full restart required (Ctrl+C, then `pixi run lab` or `jupyter lab`)
+- Simply refreshing the browser is NOT enough
 
-- Changes require a full restart (Ctrl+C in terminal, then `jupyter lab` again)
-- Simply refreshing the browser is NOT enough for new extensions
+**4. Check the browser console** (F12 or Cmd+Option+I):
+- Look for JavaScript errors
+- Search for `jupyterlab_braket_devices` to verify it loaded
+- Report any error messages or warnings
 
-**4. Ask user to check the browser console** (F12 or Cmd+Option+I):
-
-- Request user to look for JavaScript errors that might prevent extension activation
-- Ask user to search for the extension ID (`jupyterlab_braket_devices`) to see if it loaded
-- Ask user to report any error messages or warnings
-
-**5. Verify the build output:**
-
+**5. Verify build output:**
 ```bash
-ls -la lib/                          # Should contain compiled .js files
+ls -la lib/                                      # Should contain .js files
 ls -la jupyterlab_braket_devices/labextension/  # Should contain bundled extension
 ```
 
-**6. If still not working**, try a clean rebuild following the reset instructions below
+**6. If still not working**, try a clean rebuild (see Reset section below)
 
 **Common causes:**
-
-- ❌ Only ran `jlpm build` without installation commands
+- ❌ Only ran build without installation/registration commands
 - ❌ Forgot to restart JupyterLab after installation
-- ❌ Running commands outside the activated environment
+- ❌ Running commands outside activated environment (if not using Pixi)
 - ❌ Build errors that were missed (check terminal output)
 
 ### Reset (if build state is broken)
 
+If you encounter persistent build issues, perform a clean rebuild:
+
+**With Pixi:**
 ```bash
-jlpm clean:all       # Clean build artifacts
-# git clean -fdX     # (Optional) Remove all ignored files including node_modules
-jlpm install         # Only needed if you used 'git clean -fdX'
+# Clean build artifacts
+pixi run jlpm clean:all
+
+# Optional: Remove all ignored files (node_modules, etc.)
+# git clean -fdX
+
+# Reinstall and rebuild
+pixi install
+pixi run jlpm install
+pixi run jlpm build
+pixi run jupyter labextension develop . --overwrite
+```
+
+**With Traditional Environments:**
+```bash
+# Clean build artifacts
+jlpm clean:all
+
+# Optional: Remove all ignored files
+# git clean -fdX
+
+# Reinstall and rebuild
+jlpm install
 jlpm build
 pip install -e ".[dev,test]"
 jupyter labextension develop . --overwrite
@@ -631,10 +763,26 @@ jupyter server extension enable jupyterlab_braket_devices
 
 ### Environment Notes
 
-**✅ Do**: Use a virtual environment (conda/mamba/micromamba/venv)
-**✅ Do**: Use `jlpm` exclusively
-**❌ Don't**: Mix package managers (`npm`, `yarn`) with `jlpm`
-**❌ Don't**: Mix lockfiles — keep only `yarn.lock`, not `package-lock.json`
+**✅ Do**: Use **Pixi** for this project (recommended)
+- Manages both Python and Node.js in a unified environment
+- No manual activation needed - use `pixi run <command>`
+- Reproducible builds with lockfiles (`pixi.lock`)
+- Fast dependency resolution (built on conda/mamba)
+- Built-in task runner (`pixi run build`, `pixi run lab`, etc.)
+
+**✅ Do**: Use traditional environments if you prefer
+- Options: conda, mamba, micromamba, venv, UV
+- **Must manually activate** before running commands
+- Manage Python and Node.js separately
+
+**✅ Do**: Use `jlpm` exclusively for JavaScript/TypeScript
+- Never use `npm` or `yarn` directly
+- This ensures yarn.lock consistency
+
+**❌ Don't**: Mix package managers
+- Don't use `package-lock.json` (this project uses `yarn.lock`)
+- Don't run `npm install` directly (use `jlpm` or `pixi run jlpm`)
+- Don't mix pip/UV/Pixi in the same environment
 
 ## Best Practices
 
@@ -680,17 +828,29 @@ jupyter server extension enable jupyterlab_braket_devices
 
 ### Package Management
 
-**✅ Do**: Use `jlpm` consistently
+**✅ Do**: Use consistent package managers
 
+**For this project with Pixi:**
 ```bash
-jlpm install
-jlpm build
+pixi install               # Install all dependencies (Python + Node.js)
+pixi run jlpm install      # Install JS dependencies
+pixi run build             # Build the extension
+pixi run lab               # Start JupyterLab
+```
+
+**With traditional environments:**
+```bash
+pip install -e ".[dev,test]"  # Python dependencies
+jlpm install                   # JS dependencies
+jlpm build                     # Build
+jupyter lab                    # Start JupyterLab
 ```
 
 **❌ Don't**: Mix package managers or lockfiles
-
-- Don't use `package-lock.json` (this project uses `yarn.lock`)
-- Don't run `npm install`
+- ❌ Don't use `npm` or `yarn` directly - always use `jlpm`
+- ❌ Don't create `package-lock.json` (this project uses `yarn.lock`)
+- ❌ Don't mix pip/UV/Pixi in the same environment
+- ❌ Don't mix conda and pip unless you know what you're doing
 
 ### Path Handling
 

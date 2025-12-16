@@ -54,54 +54,39 @@ The `jlpm` command is JupyterLab's pinned version of
 [yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use
 `yarn` or `npm` in lieu of `jlpm` below.
 
-```bash
-# Clone the repo to your local environment
-# Change directory to the jupyterlab_braket_devices directory
+#### Use Pixi (Recommended)
 
-# Set up a virtual environment and install package in development mode
-python -m venv .venv
-source .venv/bin/activate
-pip install --editable ".[dev,test]"
-
-# Link your development version of the extension with JupyterLab
-jupyter labextension develop . --overwrite
-# Server extension must be manually installed in develop mode
-jupyter server extension enable jupyterlab_braket_devices
-
-# Rebuild extension Typescript source after making changes
-# IMPORTANT: Unlike the steps above which are performed only once, do this step
-# every time you make a change.
-jlpm build
-```
-
-You can watch the source directory and run JupyterLab at the same time in different terminals to watch for changes in the extension's source and automatically rebuild the extension.
+We recommend using pixi to manage your development environment. [Pixi](https://pixi.sh) manages both Python and Node.js dependencies in a single unified environment, making it ideal for JupyterLab extensions. Once you have installed pixi, you can setup this project for developing using the following:
 
 ```bash
-# Watch the source directory in one terminal, automatically rebuilding when needed
-jlpm watch
-# Run JupyterLab in another terminal
-jupyter lab
+# Install dependencies
+pixi install
+
+# Install the extension in development mode
+pixi run jupyter labextension develop . --overwrite
+
+# Build the frontend extension
+pixi run jlpm install
+pixi run jlpm build
 ```
 
-With the watch command running, every saved change will immediately be built locally and available in your running JupyterLab. Refresh JupyterLab to load the change in your browser (you may need to wait several seconds for the extension to be rebuilt).
-
-By default, the `jlpm build` command generates the source maps for this extension to make it easier to debug using the browser dev tools. To also generate source maps for the JupyterLab core extensions, you can run the following command:
+There are pixi tasks defined for basic dev work. To build the frontend extension, run:
 
 ```bash
-jupyter lab build --minimize=False
+pixi run build
 ```
 
-### Development uninstall
+The start JupyterLab with the editable development build:
 
 ```bash
-# Server extension must be manually disabled in develop mode
-jupyter server extension disable jupyterlab_braket_devices
-pip uninstall jupyterlab_braket_devices
+pixi run lab
 ```
 
-In development mode, you will also need to remove the symlink created by `jupyter labextension develop`
-command. To find its location, you can run `jupyter labextension list` to figure out where the `labextensions`
-folder is located. Then you can remove the symlink named `jupyterlab-braket-devices` within that folder.
+To run the tests:
+
+```bash
+pixi run test
+```
 
 ### Testing the extension
 
