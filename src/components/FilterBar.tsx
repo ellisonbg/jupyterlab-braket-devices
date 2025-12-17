@@ -111,7 +111,8 @@ export const FilterBar: React.FC<IFilterBarProps> = ({
           display: 'flex',
           flexDirection: 'row',
           flexWrap: 'wrap',
-          gap: 2
+          gap: 2,
+          alignItems: 'center'
         }}
       >
         <FormControl size="small" sx={{ minWidth: 120 }}>
@@ -159,7 +160,7 @@ export const FilterBar: React.FC<IFilterBarProps> = ({
         {hasActiveFilters && (
           <Button
             variant="outlined"
-            size="small"
+            size="medium"
             onClick={handleClearFilters}
           >
             Clear Filters
