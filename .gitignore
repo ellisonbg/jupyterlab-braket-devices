@@ -129,3 +129,5 @@ dmypy.json
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+/screenshots
