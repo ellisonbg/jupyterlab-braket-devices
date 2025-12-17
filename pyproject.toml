@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "jupyterlab_braket_devices"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 classifiers = [
     "Framework :: Jupyter",
     "Framework :: Jupyter :: JupyterLab",
@@ -19,8 +19,6 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     "jupyter_server>=2.4.0,<3"
@@ -107,4 +105,7 @@ build = "jlpm run build"
 lab = "jupyter lab"
 
 [tool.pixi.dependencies]
+python = ">=3.10,<3.13"
 jupyterlab = ">=4.5.1,<5"
+aioboto3 = ">=15.4.0,<16"
+amazon-braket-sdk = ">=1.86.0,<2"
