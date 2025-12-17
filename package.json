@@ -56,9 +56,17 @@
         "watch:labextension": "jupyter labextension watch ."
     },
     "dependencies": {
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.1",
         "@jupyterlab/application": "^4.0.0",
+        "@jupyterlab/apputils": "^4.6.1",
         "@jupyterlab/coreutils": "^6.0.0",
-        "@jupyterlab/services": "^7.0.0"
+        "@jupyterlab/launcher": "^4.5.1",
+        "@jupyterlab/services": "^7.0.0",
+        "@jupyterlab/ui-components": "^4.5.1",
+        "@mui/material": "^7.3.6",
+        "install": "^0.13.0",
+        "npm": "^11.7.0"
     },
     "devDependencies": {
         "@jupyterlab/builder": "^4.0.0",
@@ -85,7 +93,7 @@
         "stylelint-config-standard": "^34.0.0",
         "stylelint-csstree-validator": "^3.0.0",
         "stylelint-prettier": "^4.0.0",
-        "typescript": "~5.5.4",
+        "typescript": "^5.9.3",
         "yjs": "^13.5.0"
     },
     "resolutions": {

@@ -2,29 +2,50 @@ import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
-
-import { requestAPI } from './request';
+import { MainAreaWidget } from '@jupyterlab/apputils';
+import { ILauncher } from '@jupyterlab/launcher';
+import { reactIcon } from '@jupyterlab/ui-components';
+import { BraketDevicesWidget } from './widget';
 
 /**
- * Initialization data for the jupyterlab-braket-devices extension.
+ * The command IDs used by the react-widget plugin.
  */
-const plugin: JupyterFrontEndPlugin<void> = {
-  id: 'jupyterlab-braket-devices:plugin',
-  description: 'A JupyterLab extension for Amazon Braket Devices',
-  autoStart: true,
-  activate: (app: JupyterFrontEnd) => {
-    console.log('JupyterLab extension jupyterlab-braket-devices is activated!');
+namespace CommandIDs {
+  export const create = 'create-braket-devices-widget';
+}
 
-    requestAPI<any>('hello')
-      .then(data => {
-        console.log(data);
-      })
-      .catch(reason => {
-        console.error(
-          `The jupyterlab_braket_devices server extension appears to be missing.\n${reason}`
-        );
+/**
+ * Initialization data for the react-widget extension.
+ */
+const extension: JupyterFrontEndPlugin<void> = {
+  id: 'braket-widget',
+  description: 'Amazon Braket Device Information',
+  autoStart: true,
+  optional: [ILauncher],
+  activate: (app: JupyterFrontEnd, launcher: ILauncher) => {
+    const { commands } = app;
+
+    const command = CommandIDs.create;
+    commands.addCommand(command, {
+      caption: 'Create a new Amazon Braket Device Information Widget',
+      label: 'Braket Devices',
+      icon: args => (args['isPalette'] ? undefined : reactIcon),
+      execute: () => {
+        const content = new BraketDevicesWidget();
+        const widget = new MainAreaWidget<BraketDevicesWidget>({ content });
+        widget.title.label = 'Braket Devices';
+        widget.title.icon = reactIcon;
+        app.shell.add(widget, 'main');
+      }
+    });
+
+    if (launcher) {
+      launcher.add({
+        command
       });
+    }
   }
 };
 
-export default plugin;
+export default extension;
+
