@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Box, Skeleton, Alert, Button, Divider } from '@mui/material';
+import { Box, Skeleton, Alert, Button } from '@mui/material';
 import { fetchDeviceDetail } from '../api';
 import { IDeviceDetail } from '../types';
 import { parseDeviceProperties } from '../utils/propertiesParser';
@@ -94,13 +94,13 @@ export const DeviceDetail: React.FC<IDeviceDetailProps> = ({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        overflow: 'auto'
+        overflow: 'auto',
+        padding: 4,
+        gap: 3
       }}
     >
       {/* Header */}
       <DeviceDetailHeader device={device} onBack={onBack} />
-
-      <Divider />
 
       {/* Summary */}
       <DeviceSummary
@@ -108,8 +108,6 @@ export const DeviceDetail: React.FC<IDeviceDetailProps> = ({
         properties={properties}
         onRefresh={handleRefresh}
       />
-
-      <Divider />
 
       {/* Tabbed content */}
       <Box sx={{ flexGrow: 1, overflow: 'auto' }}>

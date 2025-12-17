@@ -12,8 +12,7 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  Paper,
-  Divider
+  Paper
 } from '@mui/material';
 import { IParsedProperties } from '../../types';
 import {
@@ -36,7 +35,7 @@ export const CalibrationTab: React.FC<ICalibrationTabProps> = ({
 
   if (!calibrationData) {
     return (
-      <Box padding={2}>
+      <Box>
         <Typography color="text.secondary">
           Calibration data not available
         </Typography>
@@ -45,10 +44,10 @@ export const CalibrationTab: React.FC<ICalibrationTabProps> = ({
   }
 
   return (
-    <Box padding={2}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Calibration header */}
       {calibrationData.timestamp && (
-        <Box marginBottom={2}>
+        <Box>
           <Typography variant="h6">Calibration Data</Typography>
           <Typography variant="body2" color="text.secondary">
             Last calibrated: {new Date(calibrationData.timestamp).toLocaleString()}
@@ -56,31 +55,29 @@ export const CalibrationTab: React.FC<ICalibrationTabProps> = ({
         </Box>
       )}
 
-      <Divider sx={{ marginY: 2 }} />
-
       {/* Topology information */}
-      <Typography variant="h6" gutterBottom>
-        Qubit Topology
-      </Typography>
-      {fullyConnected ? (
-        <Typography variant="body1" marginBottom={3}>
-          Fully connected
+      <Box>
+        <Typography variant="h6" sx={{ marginBottom: 2 }}>
+          Qubit Topology
         </Typography>
-      ) : (
-        <Typography variant="body2" color="text.secondary" marginBottom={3}>
-          Topology graph visualization (coming soon)
-        </Typography>
-      )}
-
-      <Divider sx={{ marginY: 2 }} />
+        {fullyConnected ? (
+          <Typography variant="body1">
+            Fully connected
+          </Typography>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            Topology graph visualization (coming soon)
+          </Typography>
+        )}
+      </Box>
 
       {/* Per-qubit metrics */}
       {calibrationData.qubits && calibrationData.qubits.length > 0 && (
-        <>
-          <Typography variant="h6" gutterBottom>
+        <Box>
+          <Typography variant="h6" sx={{ marginBottom: 2 }}>
             Per-Qubit Metrics
           </Typography>
-          <TableContainer component={Paper} sx={{ marginBottom: 3 }}>
+          <TableContainer component={Paper}>
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -110,13 +107,13 @@ export const CalibrationTab: React.FC<ICalibrationTabProps> = ({
               </TableBody>
             </Table>
           </TableContainer>
-        </>
+        </Box>
       )}
 
       {/* Per-gate metrics */}
       {calibrationData.gates && calibrationData.gates.length > 0 && (
-        <>
-          <Typography variant="h6" gutterBottom>
+        <Box>
+          <Typography variant="h6" sx={{ marginBottom: 2 }}>
             Per-Gate Metrics
           </Typography>
           <TableContainer component={Paper}>
@@ -145,7 +142,7 @@ export const CalibrationTab: React.FC<ICalibrationTabProps> = ({
               </TableBody>
             </Table>
           </TableContainer>
-        </>
+        </Box>
       )}
 
       {!calibrationData.qubits && !calibrationData.gates && (

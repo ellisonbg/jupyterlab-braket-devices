@@ -9,8 +9,7 @@ import {
   Typography,
   Chip,
   IconButton,
-  Stack,
-  Divider
+  Stack
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { IDeviceDetail, IParsedProperties } from '../types';
@@ -62,14 +61,14 @@ export const DeviceSummary: React.FC<IDeviceSummaryProps> = ({
   );
 
   return (
-    <Box padding={2}>
+    <Box>
       {/* Header with title and refresh button */}
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 2
+          marginBottom: 3
         }}
       >
         <Typography variant="h6">Summary</Typography>
@@ -81,8 +80,6 @@ export const DeviceSummary: React.FC<IDeviceSummaryProps> = ({
           <RefreshIcon />
         </IconButton>
       </Box>
-
-      <Divider sx={{ marginBottom: 3 }} />
 
       {/* Primary metrics grid - responsive flex layout */}
       <Box

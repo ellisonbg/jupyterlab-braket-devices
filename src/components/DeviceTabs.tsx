@@ -34,7 +34,7 @@ function TabPanel(props: ITabPanelProps) {
       aria-labelledby={`device-tab-${index}`}
       {...other}
     >
-      {value === index && <Box>{children}</Box>}
+      {value === index && <>{children}</>}
     </div>
   );
 }

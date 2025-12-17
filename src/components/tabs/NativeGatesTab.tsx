@@ -32,7 +32,7 @@ export const NativeGatesTab: React.FC<INativeGatesTabProps> = ({
 
   if (gates.length === 0) {
     return (
-      <Box padding={2}>
+      <Box>
         <Typography color="text.secondary">
           Native gates information not available
         </Typography>
@@ -41,8 +41,8 @@ export const NativeGatesTab: React.FC<INativeGatesTabProps> = ({
   }
 
   return (
-    <Box padding={2}>
-      <Typography variant="h6" gutterBottom>
+    <Box>
+      <Typography variant="h6" sx={{ marginBottom: 2 }}>
         Supported Quantum Gates
       </Typography>
 

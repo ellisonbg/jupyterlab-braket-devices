@@ -22,7 +22,6 @@ export const DeviceDetailHeader: React.FC<IDeviceDetailHeaderProps> = ({
 }) => {
   return (
     <Box
-      padding={2}
       sx={{
         display: 'flex',
         alignItems: 'center',
