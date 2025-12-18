@@ -5,11 +5,14 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Skeleton, Alert, Button } from '@mui/material';
 import { fetchDeviceDetail } from '../api';
-import { IDeviceDetail } from '../types';
+import { IDeviceDetail, ApiErrorType } from '../types';
 import { parseDeviceProperties } from '../utils/propertiesParser';
 import { DeviceDetailHeader } from './DeviceDetailHeader';
 import { DeviceSummary } from './DeviceSummary';
-import { DeviceTabs } from './DeviceTabs';
+import { ErrorBanner } from './ErrorBanner';
+import { EssentialMetricsSection } from './sections/EssentialMetricsSection';
+import { PerformanceMetricsSection } from './sections/PerformanceMetricsSection';
+import { OperationalDetailsSection } from './sections/OperationalDetailsSection';
 
 interface IDeviceDetailProps {
   deviceArn: string;
@@ -26,16 +29,38 @@ export const DeviceDetail: React.FC<IDeviceDetailProps> = ({
   const [device, setDevice] = useState<IDeviceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<ApiErrorType | undefined>(
+    undefined
+  );
+  const [errorDetails, setErrorDetails] = useState<string | undefined>(
+    undefined
+  );
+  const [warnings, setWarnings] = useState<string[] | undefined>(undefined);
 
   const loadDeviceDetail = async () => {
     setLoading(true);
     setError(null);
+    setErrorType(undefined);
+    setErrorDetails(undefined);
+    setWarnings(undefined);
     try {
-      const deviceData = await fetchDeviceDetail(deviceArn);
-      setDevice(deviceData);
+      const result = await fetchDeviceDetail(deviceArn);
+      setDevice(result.device);
+      setWarnings(result.warnings);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
+      // Parse JSON error from API
+      try {
+        const errorData = JSON.parse(
+          err instanceof Error ? err.message : String(err)
+        );
+        setError(errorData.message || 'Failed to fetch device details');
+        setErrorType(errorData.type);
+        setErrorDetails(errorData.details);
+      } catch {
+        // Fallback to plain error message
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -102,6 +127,29 @@ export const DeviceDetail: React.FC<IDeviceDetailProps> = ({
       {/* Header */}
       <DeviceDetailHeader device={device} onBack={onBack} />
 
+      {/* Error Banner - shown below header but above content */}
+      {error && !loading && (
+        <ErrorBanner
+          message={error}
+          type={errorType}
+          details={errorDetails}
+          severity="error"
+          onRetry={loadDeviceDetail}
+          onDismiss={() => setError(null)}
+        />
+      )}
+
+      {/* Warning Banner - for partial failures */}
+      {warnings && warnings.length > 0 && !error && (
+        <ErrorBanner
+          message="Some device information could not be loaded"
+          severity="warning"
+          warnings={warnings}
+          dismissable={true}
+          onDismiss={() => setWarnings(undefined)}
+        />
+      )}
+
       {/* Summary */}
       <DeviceSummary
         device={device}
@@ -109,9 +157,11 @@ export const DeviceDetail: React.FC<IDeviceDetailProps> = ({
         onRefresh={handleRefresh}
       />
 
-      {/* Tabbed content */}
+      {/* Sectioned content */}
       <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-        <DeviceTabs device={device} properties={properties} />
+        <EssentialMetricsSection device={device} properties={properties} />
+        <PerformanceMetricsSection device={device} properties={properties} />
+        <OperationalDetailsSection device={device} properties={properties} />
       </Box>
     </Box>
   );

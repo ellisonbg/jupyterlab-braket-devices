@@ -33,12 +33,35 @@ export interface IDeviceDetail extends IDeviceSummary {
 }
 
 /**
+ * API error types for structured error handling.
+ */
+export type ApiErrorType =
+  | 'auth'
+  | 'permission'
+  | 'not_found'
+  | 'validation'
+  | 'server_error'
+  | 'network';
+
+/**
+ * Structured API error from backend.
+ */
+export interface IApiError {
+  type: ApiErrorType;
+  message: string;
+  details?: string;
+}
+
+/**
  * API response for listing devices.
  */
 export interface IDevicesResponse {
   status: 'success' | 'error';
   devices?: IDeviceSummary[];
   message?: string;
+  warnings?: string[];
+  type?: ApiErrorType;
+  details?: string;
 }
 
 /**
@@ -48,6 +71,9 @@ export interface IDeviceResponse {
   status: 'success' | 'error';
   device?: IDeviceDetail;
   message?: string;
+  warnings?: string[];
+  type?: ApiErrorType;
+  details?: string;
 }
 
 /**
@@ -58,18 +84,28 @@ export interface IParsedProperties {
   service?: {
     deviceLocation?: string;
     deviceRegion?: string;
+    deviceCost?: {
+      price: number;
+      unit: string;
+    };
+    shotsRange?: [number, number];
+    executionWindows?: Array<{
+      executionDay: string;
+      windowStartHour: string;
+      windowEndHour: string;
+    }>;
+    updatedAt?: string;
   };
   deviceParameters?: Record<string, any>;
   paradigm?: {
     qubitCount?: number;
+    nativeGateSet?: string[];
     connectivity?: {
       fullyConnected?: boolean;
       connectivityGraph?: Record<string, any>;
     };
   };
-  provider?: {
-    properties?: Record<string, any>;
-  };
+  provider?: Record<string, any>;
   action?: Record<string, any>;
 }
 

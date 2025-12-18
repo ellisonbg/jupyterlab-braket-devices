@@ -5,11 +5,12 @@ import { Box, Typography, IconButton, ThemeProvider } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 import { fetchDevices } from './api';
-import { IDeviceSummary } from './types';
+import { IDeviceSummary, ApiErrorType } from './types';
 import { DeviceList } from './components/DeviceList';
 import { FilterBar, IFilterOptions } from './components/FilterBar';
 import { StatusBar } from './components/StatusBar';
 import { DeviceDetail } from './components/DeviceDetail';
+import { ErrorBanner } from './components/ErrorBanner';
 import { getJupyterLabTheme } from './theme-provider';
 
 /**
@@ -19,6 +20,13 @@ const BraketDevicesComponent = (): JSX.Element => {
   const [devices, setDevices] = useState<IDeviceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<ApiErrorType | undefined>(
+    undefined
+  );
+  const [errorDetails, setErrorDetails] = useState<string | undefined>(
+    undefined
+  );
+  const [warnings, setWarnings] = useState<string[] | undefined>(undefined);
   const [filters, setFilters] = useState<IFilterOptions>({
     searchQuery: '',
     typeFilter: 'all',
@@ -43,12 +51,27 @@ const BraketDevicesComponent = (): JSX.Element => {
   const loadDevices = async () => {
     setLoading(true);
     setError(null);
+    setErrorType(undefined);
+    setErrorDetails(undefined);
+    setWarnings(undefined);
     try {
-      const deviceList = await fetchDevices();
-      setDevices(deviceList);
+      const result = await fetchDevices();
+      setDevices(result.devices);
+      setWarnings(result.warnings);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
+      // Parse JSON error from API
+      try {
+        const errorData = JSON.parse(
+          err instanceof Error ? err.message : String(err)
+        );
+        setError(errorData.message || 'Failed to fetch devices');
+        setErrorType(errorData.type);
+        setErrorDetails(errorData.details);
+      } catch {
+        // Fallback to plain error message
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -189,12 +212,35 @@ const BraketDevicesComponent = (): JSX.Element => {
           providers={providers}
         />
 
+        {/* Error Banner - shown below toolbar but above content */}
+        {error && !loading && (
+          <ErrorBanner
+            message={error}
+            type={errorType}
+            details={errorDetails}
+            severity="error"
+            onRetry={loadDevices}
+            onDismiss={() => setError(null)}
+          />
+        )}
+
+        {/* Warning Banner - for partial failures */}
+        {warnings && warnings.length > 0 && !error && (
+          <ErrorBanner
+            message="Some device information could not be loaded"
+            severity="warning"
+            warnings={warnings}
+            dismissable={true}
+            onDismiss={() => setWarnings(undefined)}
+          />
+        )}
+
         {/* Device List (scrollable content) */}
         <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
           <DeviceList
             devices={filteredDevices}
             loading={loading}
-            error={error}
+            error={null}
             sortBy={sortBy}
             sortDirection={sortDirection}
             onDeviceClick={handleDeviceClick}

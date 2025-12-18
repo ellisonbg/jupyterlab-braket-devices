@@ -1,11 +1,16 @@
 import json
-from typing import Dict, Any
+import logging
+from typing import Dict, Any, List
 
 from jupyter_server.base.handlers import APIHandler
 from jupyter_server.utils import url_path_join
 import tornado
+from botocore.exceptions import ClientError, NoCredentialsError
 
 from braket.aws import AwsDevice
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 
 class DevicesRouteHandler(APIHandler):
@@ -32,64 +37,134 @@ class DevicesRouteHandler(APIHandler):
         try:
             if device_arn:
                 # Describe specific device
-                device_info = self._get_device_info(device_arn)
-                self.finish(json.dumps({
+                device_info, warnings = self._get_device_info(device_arn)
+                response = {
                     "status": "success",
                     "device": device_info
-                }))
+                }
+                if warnings:
+                    response["warnings"] = warnings
+                self.finish(json.dumps(response))
             else:
                 # List all devices
-                devices = self._list_devices()
-                self.finish(json.dumps({
+                devices, warnings = self._list_devices()
+                response = {
                     "status": "success",
                     "devices": devices
+                }
+                if warnings:
+                    response["warnings"] = warnings
+                self.finish(json.dumps(response))
+        except NoCredentialsError:
+            # AWS credentials not configured
+            logger.error("AWS credentials not configured", exc_info=True)
+            self.set_status(401)
+            self.finish(json.dumps({
+                "status": "error",
+                "type": "auth",
+                "message": "AWS credentials not configured. Please configure your AWS credentials.",
+                "details": "No credentials found in environment or credentials file."
+            }))
+        except ClientError as e:
+            # AWS client errors (expired tokens, permission denied, etc.)
+            error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+            logger.error(f"AWS ClientError ({error_code}): {str(e)}", exc_info=True)
+
+            if error_code in ['ExpiredToken', 'ExpiredTokenException']:
+                self.set_status(401)
+                self.finish(json.dumps({
+                    "status": "error",
+                    "type": "auth",
+                    "message": "AWS credentials have expired. Please refresh your credentials.",
+                    "details": str(e)
+                }))
+            elif error_code in ['AccessDenied', 'UnauthorizedOperation']:
+                self.set_status(403)
+                self.finish(json.dumps({
+                    "status": "error",
+                    "type": "permission",
+                    "message": "Permission denied. Check your IAM policy for Braket access.",
+                    "details": str(e)
+                }))
+            else:
+                self.set_status(503)
+                self.finish(json.dumps({
+                    "status": "error",
+                    "type": "server_error",
+                    "message": f"AWS service error: {error_code}",
+                    "details": str(e)
                 }))
         except ValueError as e:
             # Malformed request
+            logger.warning(f"Malformed request: {str(e)}")
             self.set_status(400)
             self.finish(json.dumps({
                 "status": "error",
+                "type": "validation",
                 "message": str(e)
             }))
         except LookupError as e:
             # Device not found
+            logger.warning(f"Device not found: {str(e)}")
             self.set_status(404)
             self.finish(json.dumps({
                 "status": "error",
+                "type": "not_found",
                 "message": str(e)
             }))
         except Exception as e:
-            # AWS service error or other unexpected error
+            # Unexpected error
             error_name = type(e).__name__
-            self.set_status(500 if 'ServiceException' not in error_name else 503)
+            logger.error(f"Unexpected error ({error_name}): {str(e)}", exc_info=True)
+            self.set_status(500)
             self.finish(json.dumps({
                 "status": "error",
-                "message": f"{error_name}: {str(e)}"
+                "type": "server_error",
+                "message": f"An unexpected error occurred: {error_name}",
+                "details": str(e)
             }))
 
-    def _list_devices(self) -> list:
+    def _list_devices(self) -> tuple[list, List[str]]:
         """
         List all available Braket devices (excluding RETIRED devices).
 
         Returns:
-            List of device summaries with fresh status
+            Tuple of (device list, warnings list)
         """
-        # Get all devices using Braket SDK, filtering for ONLINE and OFFLINE only
-        devices = AwsDevice.get_devices(statuses=['ONLINE', 'OFFLINE'])
+        warnings = []
+
+        try:
+            # Get all devices using Braket SDK, filtering for ONLINE and OFFLINE only
+            devices = AwsDevice.get_devices(statuses=['ONLINE', 'OFFLINE'])
+        except (NoCredentialsError, ClientError):
+            # Re-raise auth errors to be handled at top level
+            raise
+        except Exception as e:
+            # Log unexpected errors but don't fail completely
+            error_msg = f"Error fetching device list: {type(e).__name__}: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            warnings.append(error_msg)
+            return [], warnings
 
         devices_info = []
         for device in devices:
-            devices_info.append({
-                'deviceArn': device.arn,
-                'deviceName': device.name,
-                'deviceType': str(device.type),
-                'deviceStatus': device.status,
-                'providerName': device.provider_name
-            })
+            try:
+                devices_info.append({
+                    'deviceArn': device.arn,
+                    'deviceName': device.name,
+                    'deviceType': str(device.type),
+                    'deviceStatus': device.status,
+                    'providerName': device.provider_name
+                })
+            except Exception as e:
+                # Skip this device but log warning
+                warning_msg = f"Failed to process device {device.arn}: {str(e)}"
+                logger.warning(warning_msg)
+                warnings.append(warning_msg)
 
-        return devices_info
+        return devices_info, warnings
 
-    def _get_device_info(self, device_arn: str) -> Dict[str, Any]:
+    def _get_device_info(self, device_arn: str) -> tuple[Dict[str, Any], List[str]]:
         """
         Get detailed information for a specific device.
         Uses cache for static info, always fetches fresh status.
@@ -98,22 +173,36 @@ class DevicesRouteHandler(APIHandler):
             device_arn: Amazon Resource Name of the device
 
         Returns:
-            Device information with fresh status
+            Tuple of (device information, warnings list)
 
         Raises:
             ValueError: If device_arn is malformed
             LookupError: If device is not found
         """
+        warnings = []
+
         if not device_arn or not device_arn.startswith('arn:aws:braket:'):
             raise ValueError(f"Invalid device ARN format: {device_arn}")
 
         try:
             device = AwsDevice(device_arn)
+        except ClientError as e:
+            error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+            if error_code == 'ResourceNotFoundException':
+                raise LookupError(f"Device not found: {device_arn}. It may have been retired.")
+            # Re-raise other client errors to be handled at top level
+            raise
         except Exception as e:
-            raise LookupError(f"Device not found: {device_arn}")
+            logger.error(f"Error accessing device {device_arn}: {str(e)}", exc_info=True)
+            raise LookupError(f"Device not found or inaccessible: {device_arn}")
 
         # Get fresh status
-        current_status = device.status
+        try:
+            current_status = device.status
+        except Exception as e:
+            logger.warning(f"Failed to get status for device {device_arn}: {str(e)}")
+            current_status = "UNKNOWN"
+            warnings.append(f"Could not fetch current device status: {str(e)}")
 
         # Check if we have cached static info
         if device_arn in self._device_cache:
@@ -141,23 +230,25 @@ class DevicesRouteHandler(APIHandler):
                         'jobs': queue_info.jobs
                     }
                     device_info['queueDepth'] = queue_dict
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to fetch queue depth for {device_arn}: {str(e)}")
+                    warnings.append(f"Could not fetch queue depth: {str(e)}")
 
             # Add device properties if available
             if hasattr(device, 'properties') and device.properties:
                 try:
                     # Get the properties as a JSON string (already serialized)
                     device_info['properties'] = device.properties.json()
-                except Exception:
+                except Exception as e:
                     # If JSON serialization fails, skip properties
-                    pass
+                    logger.warning(f"Failed to serialize properties for {device_arn}: {str(e)}")
+                    warnings.append(f"Could not fetch device properties: {str(e)}")
 
             # Cache static information (everything except status)
             cached_info = device_info.copy()
             self._device_cache[device_arn] = cached_info
 
-        return device_info
+        return device_info, warnings
 
 
 def setup_route_handlers(web_app):
