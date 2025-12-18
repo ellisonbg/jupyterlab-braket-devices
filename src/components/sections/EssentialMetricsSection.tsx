@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { Box, Typography, Chip } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { IDeviceDetail, IParsedProperties } from '../../types';
 import { ParameterGrid, IParameter } from '../ParameterGrid';
 
@@ -32,31 +32,11 @@ export const EssentialMetricsSection: React.FC<
     value: device.deviceType
   });
 
-  // Status with indicator
-  const statusColor =
-    device.deviceStatus === 'ONLINE'
-      ? 'success'
-      : device.deviceStatus === 'OFFLINE'
-        ? 'error'
-        : 'default';
-  parameters.push({
-    label: 'Status',
-    value: <Chip label={device.deviceStatus} color={statusColor} size="small" />
-  });
-
   // Region/Location
   if (properties?.service?.deviceLocation) {
     parameters.push({
       label: 'Region',
       value: properties.service.deviceLocation
-    });
-  }
-
-  // Qubit Count
-  if (properties?.paradigm?.qubitCount) {
-    parameters.push({
-      label: 'Qubit Count',
-      value: properties.paradigm.qubitCount
     });
   }
 
@@ -79,24 +59,6 @@ export const EssentialMetricsSection: React.FC<
     parameters.push({
       label: 'Topology',
       value: topology
-    });
-  }
-
-  // Pending Jobs (sum of queue depths)
-  if (device.queueDepth) {
-    let totalPending = 0;
-    if (device.queueDepth.quantumTasks) {
-      totalPending = Object.values(device.queueDepth.quantumTasks).reduce(
-        (sum, count) => sum + count,
-        0
-      );
-    }
-    if (device.queueDepth.jobs) {
-      totalPending += parseInt(String(device.queueDepth.jobs), 10) || 0;
-    }
-    parameters.push({
-      label: 'Pending Jobs',
-      value: totalPending
     });
   }
 

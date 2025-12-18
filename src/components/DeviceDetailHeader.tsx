@@ -40,7 +40,7 @@ export const DeviceDetailHeader: React.FC<IDeviceDetailHeaderProps> = ({
       </Box>
 
       {/* Right: Provider logo */}
-      <ProviderLogo providerName={device.providerName} size={48} />
+      <ProviderLogo providerName={device.providerName} size={72} />
     </Box>
   );
 };

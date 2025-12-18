@@ -94,6 +94,21 @@ export const DeviceSummary: React.FC<IDeviceSummaryProps> = ({
           marginBottom: 3
         }}
       >
+        {/* Qubits */}
+        {qubitCount && <MetricItem label="Qubits" value={qubitCount} />}
+
+        {/* Pending Jobs */}
+        {queueDepths.length > 0 && (
+          <MetricItem
+            label="Pending Jobs"
+            value={totalQueueDepth}
+            tooltip="Total pending jobs across all queue types"
+          />
+        )}
+
+        {/* Location */}
+        {location && <MetricItem label="Location" value={location} />}
+
         {/* Status */}
         <MetricItem
           label="Status"
@@ -105,21 +120,6 @@ export const DeviceSummary: React.FC<IDeviceSummaryProps> = ({
             />
           }
         />
-
-        {/* Qubits */}
-        {qubitCount && <MetricItem label="Qubits" value={qubitCount} />}
-
-        {/* Location */}
-        {location && <MetricItem label="Location" value={location} />}
-
-        {/* Total queue depth */}
-        {queueDepths.length > 0 && (
-          <MetricItem
-            label="Total Queue"
-            value={totalQueueDepth}
-            tooltip="Total tasks across all queue types"
-          />
-        )}
       </Box>
 
       {/* Device ARN - full width */}

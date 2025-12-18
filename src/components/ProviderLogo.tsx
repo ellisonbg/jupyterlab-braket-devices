@@ -4,10 +4,10 @@
 
 import React from 'react';
 import { Avatar, Box } from '@mui/material';
+import { getProviderLogo } from '../utils/logoMapper';
 
 interface IProviderLogoProps {
   providerName: string;
-  logoUrl?: string;
   size?: number;
 }
 
@@ -16,11 +16,13 @@ interface IProviderLogoProps {
  */
 export const ProviderLogo: React.FC<IProviderLogoProps> = ({
   providerName,
-  logoUrl,
   size = 40
 }) => {
   // Get first letter of provider name for fallback
   const initial = providerName.charAt(0).toUpperCase();
+
+  // Look up the logo for this provider
+  const logoUrl = getProviderLogo(providerName);
 
   if (logoUrl) {
     return (
@@ -29,10 +31,9 @@ export const ProviderLogo: React.FC<IProviderLogoProps> = ({
         src={logoUrl}
         alt={`${providerName} logo`}
         sx={{
-          width: size,
-          height: size,
-          objectFit: 'contain',
-          borderRadius: '50%'
+          maxWidth: size,
+          maxHeight: size * 0.667,
+          objectFit: 'contain'
         }}
       />
     );
