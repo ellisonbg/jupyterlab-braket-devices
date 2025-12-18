@@ -8,11 +8,34 @@ import { LabIcon } from '@jupyterlab/ui-components';
 import { BraketDevicesWidget } from './widget';
 
 /**
- * Icon for the Braket Devices extension using MUI BorderClear icon.
+ * Icon for the Braket Devices extension using filled circular dot pattern in teal.
+ * Teal color (#00BCD4) works well on both light and dark backgrounds.
  */
 const borderClearIcon = new LabIcon({
   name: 'braket:border-clear',
-  svgstr: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M7 5h2V3H7zm0 8h2v-2H7zm0 8h2v-2H7zm4-4h2v-2h-2zm0 4h2v-2h-2zm-8 0h2v-2H3zm0-4h2v-2H3zm0-4h2v-2H3zm0-4h2V7H3zm0-4h2V3H3zm8 8h2v-2h-2zm8 4h2v-2h-2zm0-4h2v-2h-2zm0 8h2v-2h-2zm0-12h2V7h-2zm-8 0h2V7h-2zm8-6v2h2V3zm-8 2h2V3h-2zm4 16h2v-2h-2zm0-8h2v-2h-2zm0-8h2V3h-2z"/></svg>`
+  svgstr: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <circle fill="#00BCD4" stroke="none" cx="4" cy="4" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="8" cy="4" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="12" cy="4" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="16" cy="4" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="20" cy="4" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="4" cy="8" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="12" cy="8" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="20" cy="8" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="4" cy="12" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="8" cy="12" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="12" cy="12" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="16" cy="12" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="20" cy="12" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="4" cy="16" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="12" cy="16" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="20" cy="16" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="4" cy="20" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="8" cy="20" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="12" cy="20" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="16" cy="20" r="1"/>
+  <circle fill="#00BCD4" stroke="none" cx="20" cy="20" r="1"/>
+</svg>`
 });
 
 /**
