@@ -105,7 +105,7 @@ const BraketDevicesComponent = (): JSX.Element => {
     // Apply type filter
     if (filters.typeFilter !== 'all') {
       filtered = filtered.filter(d =>
-        d.deviceType.toUpperCase().includes(filters.typeFilter)
+        d.deviceType.toUpperCase().includes(filters.typeFilter.toUpperCase())
       );
     }
 
