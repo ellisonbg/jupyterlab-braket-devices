@@ -39,12 +39,12 @@ interface IDeviceListProps {
  */
 const getStatusColor = (
   status: string
-): 'success' | 'default' | 'warning' => {
+): 'success' | 'error' | 'warning' => {
   if (status === 'ONLINE') {
     return 'success';
   }
   if (status === 'OFFLINE') {
-    return 'default';
+    return 'error';
   }
   return 'warning';
 };

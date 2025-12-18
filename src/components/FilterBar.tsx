@@ -19,7 +19,7 @@ import SearchIcon from '@mui/icons-material/Search';
 
 export interface IFilterOptions {
   searchQuery: string;
-  typeFilter: 'all' | 'QPU' | 'SIMULATOR';
+  typeFilter: 'all' | 'QPU' | 'Simulator';
   statusFilter: 'all' | 'ONLINE' | 'OFFLINE';
   providerFilter: string;
 }
@@ -124,7 +124,7 @@ export const FilterBar: React.FC<IFilterBarProps> = ({
           >
             <MenuItem value="all">All Types</MenuItem>
             <MenuItem value="QPU">QPU</MenuItem>
-            <MenuItem value="SIMULATOR">Simulator</MenuItem>
+            <MenuItem value="Simulator">Simulator</MenuItem>
           </Select>
         </FormControl>
 

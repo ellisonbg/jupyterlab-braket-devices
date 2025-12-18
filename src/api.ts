@@ -12,6 +12,23 @@ import {
 } from './types';
 
 /**
+ * Clean device type strings by removing the "AwsDeviceType." prefix.
+ * Transforms "AwsDeviceType.QPU" to "QPU" and "AwsDeviceType.SIMULATOR" to "Simulator".
+ *
+ * @param deviceType - Raw device type string from the backend
+ * @returns Cleaned device type string
+ */
+function cleanDeviceType(deviceType: string): string {
+  if (deviceType.includes('QPU')) {
+    return 'QPU';
+  }
+  if (deviceType.includes('SIMULATOR')) {
+    return 'Simulator';
+  }
+  return deviceType; // fallback for unknown types
+}
+
+/**
  * Result from fetchDevices including devices and optional warnings.
  */
 export interface IFetchDevicesResult {
@@ -45,8 +62,14 @@ export async function fetchDevices(): Promise<IFetchDevicesResult> {
       throw new Error(JSON.stringify(error));
     }
 
+    // Clean device types before returning
+    const cleanedDevices = (response.devices || []).map(device => ({
+      ...device,
+      deviceType: cleanDeviceType(device.deviceType)
+    }));
+
     return {
-      devices: response.devices || [],
+      devices: cleanedDevices,
       warnings: response.warnings
     };
   } catch (err) {
@@ -144,8 +167,14 @@ export async function fetchDeviceDetail(
       );
     }
 
+    // Clean device type before returning
+    const cleanedDevice = {
+      ...response.device,
+      deviceType: cleanDeviceType(response.device.deviceType)
+    };
+
     return {
-      device: response.device,
+      device: cleanedDevice,
       warnings: response.warnings
     };
   } catch (err) {
