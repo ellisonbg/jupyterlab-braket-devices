@@ -3,29 +3,24 @@
  */
 
 import React from 'react';
-import { Box, Typography, Chip } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
+} from '@mui/material';
 import { IDeviceDetail, IParsedProperties } from '../../types';
 import { ParameterGrid, IParameter } from '../ParameterGrid';
 
 interface IOperationalDetailsSectionProps {
   device: IDeviceDetail;
   properties: IParsedProperties | null;
-}
-
-/**
- * Format execution windows as human-readable schedule.
- */
-function formatExecutionWindows(windows: any[]): string {
-  if (!windows || windows.length === 0) {
-    return 'N/A';
-  }
-
-  return windows
-    .map(
-      (window) =>
-        `${window.executionDay}: ${window.windowStartHour} - ${window.windowEndHour}`
-    )
-    .join('; ');
 }
 
 /**
@@ -41,20 +36,43 @@ function formatTimestamp(timestamp: string): string {
 }
 
 /**
+ * Format time from HH:MM:SS UTC to local time with timezone indicator.
+ */
+function formatTime(time: string): string {
+  // Parse UTC time and convert to local time
+  const [hours, minutes] = time.split(':');
+  const utcHour = parseInt(hours, 10);
+  const minuteValue = parseInt(minutes, 10);
+
+  // Create a date object in UTC
+  const utcDate = new Date();
+  utcDate.setUTCHours(utcHour, minuteValue, 0, 0);
+
+  // Get local time
+  const localHour = utcDate.getHours();
+  const localMinutes = utcDate.getMinutes();
+
+  // Format in 12-hour format with timezone
+  const ampm = localHour >= 12 ? 'PM' : 'AM';
+  const hour12 = localHour % 12 || 12;
+  const formattedMinutes = localMinutes.toString().padStart(2, '0');
+
+  // Get timezone abbreviation
+  const timezoneName = new Intl.DateTimeFormat('en-US', {
+    timeZoneName: 'short'
+  }).formatToParts(utcDate).find(part => part.type === 'timeZoneName')?.value || '';
+
+  return `${hour12}:${formattedMinutes} ${ampm} ${timezoneName}`;
+}
+
+/**
  * Section showing operational details (Phase 3).
  */
 export const OperationalDetailsSection: React.FC<
   IOperationalDetailsSectionProps
 > = ({ device, properties }) => {
   const parameters: IParameter[] = [];
-
-  // Execution Windows
-  if (properties?.service?.executionWindows) {
-    parameters.push({
-      label: 'Execution Windows',
-      value: formatExecutionWindows(properties.service.executionWindows)
-    });
-  }
+  const executionWindows = properties?.service?.executionWindows;
 
   // Last Updated
   if (properties?.service?.updatedAt) {
@@ -62,39 +80,6 @@ export const OperationalDetailsSection: React.FC<
       label: 'Last Updated',
       value: formatTimestamp(properties.service.updatedAt)
     });
-  }
-
-  // Queue Depth breakdown
-  if (device.queueDepth?.quantumTasks) {
-    const normalPriority =
-      device.queueDepth.quantumTasks['QueueType.NORMAL'] ||
-      device.queueDepth.quantumTasks['NORMAL'] ||
-      0;
-    parameters.push({
-      label: 'Queue Depth (Normal)',
-      value: normalPriority
-    });
-
-    const priorityTasks =
-      device.queueDepth.quantumTasks['QueueType.PRIORITY'] ||
-      device.queueDepth.quantumTasks['PRIORITY'] ||
-      0;
-    if (priorityTasks > 0) {
-      parameters.push({
-        label: 'Queue Depth (Priority)',
-        value: priorityTasks
-      });
-    }
-  }
-
-  if (device.queueDepth?.jobs) {
-    const jobs = parseInt(String(device.queueDepth.jobs), 10) || 0;
-    if (jobs > 0) {
-      parameters.push({
-        label: 'Queue Depth (Jobs)',
-        value: jobs
-      });
-    }
   }
 
   // Max Executables (for program set actions)
@@ -117,7 +102,7 @@ export const OperationalDetailsSection: React.FC<
 
   // Supported Result Types
   const firstAction = actionProps
-    ? Object.values(actionProps)[0] as any
+    ? (Object.values(actionProps)[0] as any)
     : null;
   if (firstAction?.supportedResultTypes) {
     const resultTypes = firstAction.supportedResultTypes.map(
@@ -138,9 +123,51 @@ export const OperationalDetailsSection: React.FC<
   return (
     <Box sx={{ marginBottom: 4 }}>
       <Typography variant="h6" sx={{ marginBottom: 2 }}>
-        Operational Details
+        Operations
       </Typography>
-      <ParameterGrid parameters={parameters} columns={{ xs: 1, sm: 2, md: 3, lg: 3 }} />
+
+      {/* First row: Main parameters */}
+      <ParameterGrid
+        parameters={parameters}
+        columns={{ xs: 1, sm: 2, md: 3, lg: 4 }}
+      />
+
+      {/* Second row: Availability table */}
+      {executionWindows && executionWindows.length > 0 && (
+        <Box sx={{ marginTop: 3 }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontWeight: 500, marginBottom: 1 }}
+          >
+            Availability
+          </Typography>
+          <TableContainer
+            component={Paper}
+            variant="outlined"
+            sx={{ maxWidth: 320 }}
+          >
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Day</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Start Time</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>End Time</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {executionWindows.map((window: any, index: number) => (
+                  <TableRow key={index}>
+                    <TableCell>{window.executionDay}</TableCell>
+                    <TableCell>{formatTime(window.windowStartHour)}</TableCell>
+                    <TableCell>{formatTime(window.windowEndHour)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
     </Box>
   );
 };

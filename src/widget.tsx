@@ -180,8 +180,8 @@ const BraketDevicesComponent = (): JSX.Element => {
           flexDirection: 'column',
           height: '100%',
           overflow: 'hidden',
-          padding: 4,
-          gap: 2
+          padding: 5,
+          gap: 3
         }}
       >
         {/* Toolbar */}

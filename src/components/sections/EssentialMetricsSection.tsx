@@ -85,9 +85,9 @@ export const EssentialMetricsSection: React.FC<
   return (
     <Box sx={{ marginBottom: 4 }}>
       <Typography variant="h6" sx={{ marginBottom: 2 }}>
-        Essential Metrics
+        Details
       </Typography>
-      <ParameterGrid parameters={parameters} />
+      <ParameterGrid parameters={parameters} columns={{ xs: 1, sm: 2, md: 3, lg: 4 }} />
     </Box>
   );
 };

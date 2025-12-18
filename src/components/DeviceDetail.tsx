@@ -83,7 +83,7 @@ export const DeviceDetail: React.FC<IDeviceDetailProps> = ({
           flexDirection: 'column',
           height: '100%',
           overflow: 'auto',
-          padding: 2
+          padding: 5
         }}
       >
         <Skeleton variant="rectangular" height={60} sx={{ marginBottom: 2 }} />
@@ -119,46 +119,61 @@ export const DeviceDetail: React.FC<IDeviceDetailProps> = ({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        overflow: 'auto',
-        padding: 4,
+        overflow: 'hidden',
+        padding: 5,
         gap: 3
       }}
     >
-      {/* Header */}
-      <DeviceDetailHeader device={device} onBack={onBack} />
+      {/* Fixed Header */}
+      <Box sx={{ padding: 0 }}>
+        <DeviceDetailHeader device={device} onBack={onBack} />
+      </Box>
 
-      {/* Error Banner - shown below header but above content */}
-      {error && !loading && (
-        <ErrorBanner
-          message={error}
-          type={errorType}
-          details={errorDetails}
-          severity="error"
-          onRetry={loadDeviceDetail}
-          onDismiss={() => setError(null)}
-        />
-      )}
+      {/* Scrollable Content Area */}
+      <Box
+        sx={{
+          flexGrow: 1,
+          overflow: 'auto',
+          paddingBottom: 5
+        }}
+      >
+        {/* Error Banner - shown below header but above content */}
+        {error && !loading && (
+          <Box sx={{ marginBottom: 3 }}>
+            <ErrorBanner
+              message={error}
+              type={errorType}
+              details={errorDetails}
+              severity="error"
+              onRetry={loadDeviceDetail}
+              onDismiss={() => setError(null)}
+            />
+          </Box>
+        )}
 
-      {/* Warning Banner - for partial failures */}
-      {warnings && warnings.length > 0 && !error && (
-        <ErrorBanner
-          message="Some device information could not be loaded"
-          severity="warning"
-          warnings={warnings}
-          dismissable={true}
-          onDismiss={() => setWarnings(undefined)}
-        />
-      )}
+        {/* Warning Banner - for partial failures */}
+        {warnings && warnings.length > 0 && !error && (
+          <Box sx={{ marginBottom: 3 }}>
+            <ErrorBanner
+              message="Some device information could not be loaded"
+              severity="warning"
+              warnings={warnings}
+              dismissable={true}
+              onDismiss={() => setWarnings(undefined)}
+            />
+          </Box>
+        )}
 
-      {/* Summary */}
-      <DeviceSummary
-        device={device}
-        properties={properties}
-        onRefresh={handleRefresh}
-      />
+        {/* Summary */}
+        <Box sx={{ marginBottom: 3 }}>
+          <DeviceSummary
+            device={device}
+            properties={properties}
+            onRefresh={handleRefresh}
+          />
+        </Box>
 
-      {/* Sectioned content */}
-      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+        {/* Sectioned content */}
         <EssentialMetricsSection device={device} properties={properties} />
         <PerformanceMetricsSection device={device} properties={properties} />
         <OperationalDetailsSection device={device} properties={properties} />

@@ -72,7 +72,7 @@ export const DeviceList: React.FC<IDeviceListProps> = ({
   // Loading state
   if (loading) {
     return (
-      <Box sx={{ padding: 2 }}>
+      <Box sx={{ padding: 0 }}>
         {[1, 2, 3, 4, 5].map(i => (
           <Skeleton key={i} height={60} sx={{ marginBottom: 1 }} />
         ))}
