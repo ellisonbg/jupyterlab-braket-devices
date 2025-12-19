@@ -234,9 +234,6 @@ export const DeviceList: React.FC<IDeviceListProps> = ({
                       }}
                     >
                       <CircularProgress size={16} />
-                      <Typography variant="body2" color="text.secondary">
-                        Loading...
-                      </Typography>
                     </Box>
                   ) : (
                     <Chip
