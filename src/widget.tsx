@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Typography, IconButton, ThemeProvider } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
-import { fetchDevices } from './api';
+import { fetchDeviceStatuses } from './api';
 import { IDeviceSummary, ApiErrorType } from './types';
 import { DeviceList } from './components/DeviceList';
 import { FilterBar, IFilterOptions } from './components/FilterBar';
@@ -13,6 +13,7 @@ import { StatusBar } from './components/StatusBar';
 import { DeviceDetail } from './components/DeviceDetail';
 import { ErrorBanner } from './components/ErrorBanner';
 import { getJupyterLabTheme } from './theme-provider';
+import { STATIC_DEVICES } from './staticDeviceData';
 
 interface IBraketDevicesComponentProps {
   commands: CommandRegistry;
@@ -24,8 +25,14 @@ interface IBraketDevicesComponentProps {
 const BraketDevicesComponent = ({
   commands
 }: IBraketDevicesComponentProps): JSX.Element => {
-  const [devices, setDevices] = useState<IDeviceSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Initialize devices with static data and LOADING status
+  const [devices, setDevices] = useState<IDeviceSummary[]>(
+    STATIC_DEVICES.map(device => ({
+      ...device,
+      deviceStatus: 'LOADING'
+    }))
+  );
+  const [statusLoading, setStatusLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<ApiErrorType | undefined>(
     undefined
@@ -42,7 +49,7 @@ const BraketDevicesComponent = ({
   });
 
   // Sort state
-  const [sortBy, setSortBy] = useState<'provider' | 'name' | 'status' | 'type'>('name');
+  const [sortBy, setSortBy] = useState<'provider' | 'name' | 'status' | 'type' | 'qubits'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Navigation state
@@ -54,24 +61,40 @@ const BraketDevicesComponent = ({
   // Create theme that responds to JupyterLab theme changes
   const theme = useMemo(() => getJupyterLabTheme(), []);
 
-  // Load devices
-  const loadDevices = async () => {
-    setLoading(true);
+  // Load device statuses (async)
+  const loadDeviceStatuses = async () => {
+    setStatusLoading(true);
     setError(null);
     setErrorType(undefined);
     setErrorDetails(undefined);
     setWarnings(undefined);
+
+    // Set all devices to LOADING status
+    setDevices(prevDevices =>
+      prevDevices.map(device => ({
+        ...device,
+        deviceStatus: 'LOADING'
+      }))
+    );
+
     try {
-      const result = await fetchDevices();
-      setDevices(result.devices);
-      setWarnings(result.warnings);
+      const result = await fetchDeviceStatuses();
+      const statusMap = result.statuses;
+
+      // Update devices with real status
+      setDevices(prevDevices =>
+        prevDevices.map(device => ({
+          ...device,
+          deviceStatus: statusMap[device.deviceArn] || 'UNKNOWN'
+        }))
+      );
     } catch (err) {
       // Parse JSON error from API
       try {
         const errorData = JSON.parse(
           err instanceof Error ? err.message : String(err)
         );
-        setError(errorData.message || 'Failed to fetch devices');
+        setError(errorData.message || 'Failed to fetch device statuses');
         setErrorType(errorData.type);
         setErrorDetails(errorData.details);
       } catch {
@@ -79,14 +102,22 @@ const BraketDevicesComponent = ({
         const message = err instanceof Error ? err.message : 'Unknown error';
         setError(message);
       }
+
+      // On error, set all to UNKNOWN status
+      setDevices(prevDevices =>
+        prevDevices.map(device => ({
+          ...device,
+          deviceStatus: 'UNKNOWN'
+        }))
+      );
     } finally {
-      setLoading(false);
+      setStatusLoading(false);
     }
   };
 
-  // Load devices on mount
+  // Load device statuses on mount
   useEffect(() => {
-    loadDevices();
+    loadDeviceStatuses();
   }, []);
 
   // Get unique providers for filter dropdown
@@ -142,6 +173,12 @@ const BraketDevicesComponent = ({
         case 'type':
           comparison = a.deviceType.localeCompare(b.deviceType);
           break;
+        case 'qubits':
+          // Handle undefined qubit counts (treat as -1 for sorting)
+          const aQubits = a.qubitCount ?? -1;
+          const bQubits = b.qubitCount ?? -1;
+          comparison = aQubits - bQubits;
+          break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });
@@ -159,7 +196,7 @@ const BraketDevicesComponent = ({
     setSelectedDeviceArn(null);
   };
 
-  const handleSort = (field: 'provider' | 'name' | 'status' | 'type') => {
+  const handleSort = (field: 'provider' | 'name' | 'status' | 'type' | 'qubits') => {
     if (sortBy === field) {
       // Toggle direction if clicking the same field
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -211,8 +248,8 @@ const BraketDevicesComponent = ({
             Braket Devices
           </Typography>
           <IconButton
-            onClick={loadDevices}
-            disabled={loading}
+            onClick={loadDeviceStatuses}
+            disabled={statusLoading}
             aria-label="refresh"
           >
             <RefreshIcon />
@@ -228,13 +265,13 @@ const BraketDevicesComponent = ({
         />
 
         {/* Error Banner - shown below toolbar but above content */}
-        {error && !loading && (
+        {error && !statusLoading && (
           <ErrorBanner
             message={error}
             type={errorType}
             details={errorDetails}
             severity="error"
-            onRetry={loadDevices}
+            onRetry={loadDeviceStatuses}
             onDismiss={() => setError(null)}
           />
         )}
@@ -254,18 +291,18 @@ const BraketDevicesComponent = ({
         <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
           <DeviceList
             devices={filteredDevices}
-            loading={loading}
+            loading={false}
             error={null}
             sortBy={sortBy}
             sortDirection={sortDirection}
             onDeviceClick={handleDeviceClick}
-            onRetry={loadDevices}
+            onRetry={loadDeviceStatuses}
             onSort={handleSort}
           />
         </Box>
 
         {/* Status Bar */}
-        {!loading && !error && <StatusBar devices={filteredDevices} />}
+        {!error && <StatusBar devices={filteredDevices} />}
       </Box>
     </ThemeProvider>
   );

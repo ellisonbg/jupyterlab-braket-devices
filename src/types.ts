@@ -13,6 +13,7 @@ export interface IDeviceSummary {
   deviceType: string;
   deviceStatus: string;
   providerName: string;
+  qubitCount?: number;
 }
 
 /**

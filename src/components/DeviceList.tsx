@@ -16,11 +16,12 @@ import {
   Skeleton,
   Alert,
   Button,
-  TableSortLabel
+  TableSortLabel,
+  CircularProgress
 } from '@mui/material';
 import { IDeviceSummary } from '../types';
 
-type SortField = 'provider' | 'name' | 'status' | 'type';
+type SortField = 'provider' | 'name' | 'status' | 'type' | 'qubits';
 type SortDirection = 'asc' | 'desc';
 
 interface IDeviceListProps {
@@ -39,12 +40,15 @@ interface IDeviceListProps {
  */
 const getStatusColor = (
   status: string
-): 'success' | 'error' | 'warning' => {
+): 'success' | 'error' | 'warning' | 'default' => {
   if (status === 'ONLINE') {
     return 'success';
   }
   if (status === 'OFFLINE') {
     return 'error';
+  }
+  if (status === 'LOADING') {
+    return 'default';
   }
   return 'warning';
 };
@@ -161,11 +165,11 @@ export const DeviceList: React.FC<IDeviceListProps> = ({
               }}
             >
               <TableSortLabel
-                active={sortBy === 'status'}
-                direction={sortBy === 'status' ? sortDirection : 'asc'}
-                onClick={() => onSort('status')}
+                active={sortBy === 'qubits'}
+                direction={sortBy === 'qubits' ? sortDirection : 'asc'}
+                onClick={() => onSort('qubits')}
               >
-                Status
+                Qubits
               </TableSortLabel>
             </TableCell>
             <TableCell
@@ -180,6 +184,20 @@ export const DeviceList: React.FC<IDeviceListProps> = ({
                 onClick={() => onSort('type')}
               >
                 Type
+              </TableSortLabel>
+            </TableCell>
+            <TableCell
+              sx={{
+                fontWeight: 600,
+                backgroundColor: 'action.hover'
+              }}
+            >
+              <TableSortLabel
+                active={sortBy === 'status'}
+                direction={sortBy === 'status' ? sortDirection : 'asc'}
+                onClick={() => onSort('status')}
+              >
+                Status
               </TableSortLabel>
             </TableCell>
           </TableRow>
@@ -197,11 +215,7 @@ export const DeviceList: React.FC<IDeviceListProps> = ({
                 <TableCell>{device.providerName}</TableCell>
                 <TableCell>{device.deviceName}</TableCell>
                 <TableCell>
-                  <Chip
-                    label={device.deviceStatus}
-                    color={getStatusColor(device.deviceStatus)}
-                    size="small"
-                  />
+                  {device.qubitCount !== undefined ? device.qubitCount : '-'}
                 </TableCell>
                 <TableCell>
                   <Chip
@@ -209,6 +223,28 @@ export const DeviceList: React.FC<IDeviceListProps> = ({
                     variant={getTypeVariant(device.deviceType)}
                     size="small"
                   />
+                </TableCell>
+                <TableCell>
+                  {device.deviceStatus === 'LOADING' ? (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}
+                    >
+                      <CircularProgress size={16} />
+                      <Typography variant="body2" color="text.secondary">
+                        Loading...
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Chip
+                      label={device.deviceStatus}
+                      color={getStatusColor(device.deviceStatus)}
+                      size="small"
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             ))}

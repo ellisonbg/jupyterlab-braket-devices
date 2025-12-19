@@ -251,12 +251,121 @@ class DevicesRouteHandler(APIHandler):
         return device_info, warnings
 
 
+class DeviceStatusRouteHandler(APIHandler):
+    """
+    Handler for fetching only device status information.
+
+    GET: Returns status for all devices (lightweight endpoint)
+    """
+
+    @tornado.web.authenticated
+    def get(self):
+        """
+        Handle GET requests for device status only.
+
+        Returns:
+            JSON array of { deviceArn, deviceStatus } objects
+        """
+        try:
+            statuses = self._get_all_device_statuses()
+            self.finish(json.dumps({
+                "status": "success",
+                "statuses": statuses
+            }))
+        except NoCredentialsError:
+            # AWS credentials not configured
+            logger.error("AWS credentials not configured", exc_info=True)
+            self.set_status(401)
+            self.finish(json.dumps({
+                "status": "error",
+                "type": "auth",
+                "message": "AWS credentials not configured. Please configure your AWS credentials.",
+                "details": "No credentials found in environment or credentials file."
+            }))
+        except ClientError as e:
+            # AWS client errors
+            error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+            logger.error(f"AWS ClientError ({error_code}): {str(e)}", exc_info=True)
+
+            if error_code in ['ExpiredToken', 'ExpiredTokenException']:
+                self.set_status(401)
+                self.finish(json.dumps({
+                    "status": "error",
+                    "type": "auth",
+                    "message": "AWS credentials have expired. Please refresh your credentials.",
+                    "details": str(e)
+                }))
+            elif error_code in ['AccessDenied', 'UnauthorizedOperation']:
+                self.set_status(403)
+                self.finish(json.dumps({
+                    "status": "error",
+                    "type": "permission",
+                    "message": "Permission denied. Check your IAM policy for Braket access.",
+                    "details": str(e)
+                }))
+            else:
+                self.set_status(503)
+                self.finish(json.dumps({
+                    "status": "error",
+                    "type": "server_error",
+                    "message": f"AWS service error: {error_code}",
+                    "details": str(e)
+                }))
+        except Exception as e:
+            # Unexpected error
+            error_name = type(e).__name__
+            logger.error(f"Unexpected error ({error_name}): {str(e)}", exc_info=True)
+            self.set_status(500)
+            self.finish(json.dumps({
+                "status": "error",
+                "type": "server_error",
+                "message": f"An unexpected error occurred: {error_name}",
+                "details": str(e)
+            }))
+
+    def _get_all_device_statuses(self) -> List[Dict[str, str]]:
+        """
+        Fetch only status for all Braket devices.
+
+        Returns:
+            List of dicts with deviceArn and deviceStatus
+        """
+        try:
+            devices = AwsDevice.get_devices(statuses=['ONLINE', 'OFFLINE'])
+        except (NoCredentialsError, ClientError):
+            # Re-raise auth errors to be handled at top level
+            raise
+        except Exception as e:
+            # Log unexpected errors
+            error_msg = f"Error fetching device statuses: {type(e).__name__}: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            raise
+
+        statuses = []
+        for device in devices:
+            try:
+                statuses.append({
+                    'deviceArn': device.arn,
+                    'deviceStatus': device.status
+                })
+            except Exception as e:
+                # Skip this device but log warning
+                logger.warning(f"Failed to get status for device {device.arn}: {str(e)}")
+
+        return statuses
+
+
 def setup_route_handlers(web_app):
     """Register route handlers with the web application."""
     host_pattern = ".*$"
     base_url = web_app.settings["base_url"]
 
     devices_route_pattern = url_path_join(base_url, "jupyterlab-braket-devices", "devices")
-    handlers = [(devices_route_pattern, DevicesRouteHandler)]
+    status_route_pattern = url_path_join(base_url, "jupyterlab-braket-devices", "devices", "status")
+
+    handlers = [
+        (status_route_pattern, DeviceStatusRouteHandler),
+        (devices_route_pattern, DevicesRouteHandler)
+    ]
 
     web_app.add_handlers(host_pattern, handlers)

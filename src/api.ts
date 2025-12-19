@@ -119,6 +119,109 @@ export async function fetchDevices(): Promise<IFetchDevicesResult> {
 }
 
 /**
+ * Result from fetchDeviceStatuses.
+ */
+export interface IFetchDeviceStatusesResult {
+  statuses: Record<string, string>;
+  error?: {
+    message: string;
+    type?: string;
+    details?: string;
+  };
+}
+
+/**
+ * API response for device status endpoint.
+ */
+export interface IDeviceStatusesResponse {
+  status: 'success' | 'error';
+  statuses?: Array<{ deviceArn: string; deviceStatus: string }>;
+  message?: string;
+  type?: string;
+  details?: string;
+}
+
+/**
+ * Fetch only the status for all devices.
+ * This is a lightweight endpoint for refreshing status without fetching full device data.
+ *
+ * @returns Promise resolving to map of deviceArn -> deviceStatus
+ * @throws Error with descriptive message if the request fails
+ */
+export async function fetchDeviceStatuses(): Promise<
+  IFetchDeviceStatusesResult
+> {
+  try {
+    const response = await requestAPI<IDeviceStatusesResponse>(
+      'devices/status',
+      {
+        method: 'GET'
+      }
+    );
+
+    if (response.status === 'error') {
+      const error = {
+        message: response.message || 'Failed to fetch device statuses',
+        type: response.type,
+        details: response.details
+      };
+      throw new Error(JSON.stringify(error));
+    }
+
+    // Convert array to map for efficient lookup
+    const statusMap: Record<string, string> = {};
+    (response.statuses || []).forEach(item => {
+      statusMap[item.deviceArn] = item.deviceStatus;
+    });
+
+    return { statuses: statusMap };
+  } catch (err) {
+    // Extract detailed error information from ResponseError
+    if (err instanceof ServerConnection.ResponseError) {
+      const status = err.response.status;
+      let detail = err.message;
+
+      // Try to parse JSON error response
+      try {
+        const errorData = JSON.parse(detail);
+        throw new Error(
+          JSON.stringify({
+            message: errorData.message || `Request failed (${status})`,
+            type: errorData.type,
+            details: errorData.details
+          })
+        );
+      } catch {
+        // Not JSON, handle as plain text
+        // Truncate HTML responses for cleaner error messages
+        if (
+          typeof detail === 'string' &&
+          (detail.includes('<!DOCTYPE') || detail.includes('<html'))
+        ) {
+          detail = `HTML error page (${detail.substring(0, 100)}...)`;
+        }
+
+        throw new Error(
+          JSON.stringify({
+            message: `Failed to fetch device statuses (${status})`,
+            type: status === 401 ? 'auth' : 'server_error',
+            details: detail
+          })
+        );
+      }
+    }
+
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    throw new Error(
+      JSON.stringify({
+        message: `Failed to fetch device statuses: ${msg}`,
+        type: 'network'
+      })
+    );
+  }
+}
+
+/**
  * Result from fetchDeviceDetail including device and optional warnings.
  */
 export interface IFetchDeviceDetailResult {
