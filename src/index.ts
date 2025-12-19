@@ -62,7 +62,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       label: 'Braket Devices',
       icon: args => (args['isPalette'] ? undefined : borderClearIcon),
       execute: () => {
-        const content = new BraketDevicesWidget();
+        const content = new BraketDevicesWidget(commands);
         const widget = new MainAreaWidget<BraketDevicesWidget>({ content });
         widget.title.label = 'Braket Devices';
         widget.title.icon = borderClearIcon;

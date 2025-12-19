@@ -28,6 +28,7 @@ interface IFilterBarProps {
   filters: IFilterOptions;
   onFiltersChange: (filters: IFilterOptions) => void;
   providers: string[];
+  onJobsClick?: () => void;
 }
 
 /**
@@ -36,7 +37,8 @@ interface IFilterBarProps {
 export const FilterBar: React.FC<IFilterBarProps> = ({
   filters,
   onFiltersChange,
-  providers
+  providers,
+  onJobsClick
 }) => {
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onFiltersChange({
@@ -164,6 +166,18 @@ export const FilterBar: React.FC<IFilterBarProps> = ({
             onClick={handleClearFilters}
           >
             Clear Filters
+          </Button>
+        )}
+
+        <Box sx={{ flexGrow: 1 }} />
+
+        {onJobsClick && (
+          <Button
+            variant="contained"
+            size="medium"
+            onClick={onJobsClick}
+          >
+            Jobs
           </Button>
         )}
       </Box>

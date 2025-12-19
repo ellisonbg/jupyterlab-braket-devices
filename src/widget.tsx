@@ -1,4 +1,5 @@
 import { ReactWidget } from '@jupyterlab/ui-components';
+import { CommandRegistry } from '@lumino/commands';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Typography, IconButton, ThemeProvider } from '@mui/material';
@@ -13,10 +14,16 @@ import { DeviceDetail } from './components/DeviceDetail';
 import { ErrorBanner } from './components/ErrorBanner';
 import { getJupyterLabTheme } from './theme-provider';
 
+interface IBraketDevicesComponentProps {
+  commands: CommandRegistry;
+}
+
 /**
  * React component for Braket Devices Explorer.
  */
-const BraketDevicesComponent = (): JSX.Element => {
+const BraketDevicesComponent = ({
+  commands
+}: IBraketDevicesComponentProps): JSX.Element => {
   const [devices, setDevices] = useState<IDeviceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -163,6 +170,13 @@ const BraketDevicesComponent = (): JSX.Element => {
     }
   };
 
+  const handleJobsClick = () => {
+    commands.execute('scheduling:list-jobs-from-launcher');
+  };
+
+  // Check if the scheduling command is available
+  const hasSchedulingCommand = commands.hasCommand('scheduling:list-jobs-from-launcher');
+
   // Show detail view if a device is selected
   if (currentView === 'detail' && selectedDeviceArn) {
     return (
@@ -210,6 +224,7 @@ const BraketDevicesComponent = (): JSX.Element => {
           filters={filters}
           onFiltersChange={setFilters}
           providers={providers}
+          onJobsClick={hasSchedulingCommand ? handleJobsClick : undefined}
         />
 
         {/* Error Banner - shown below toolbar but above content */}
@@ -260,16 +275,19 @@ const BraketDevicesComponent = (): JSX.Element => {
  * A Braket Devices Lumino Widget that wraps the React component.
  */
 export class BraketDevicesWidget extends ReactWidget {
+  private _commands: CommandRegistry;
+
   /**
    * Constructs a new BraketDevicesWidget.
    */
-  constructor() {
+  constructor(commands: CommandRegistry) {
     super();
+    this._commands = commands;
     this.addClass('jp-react-widget');
   }
 
   render(): JSX.Element {
-    return <BraketDevicesComponent />;
+    return <BraketDevicesComponent commands={this._commands} />;
   }
 }
 
