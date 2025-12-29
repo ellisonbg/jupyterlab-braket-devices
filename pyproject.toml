@@ -23,7 +23,7 @@ classifiers = [
 dependencies = [
     "jupyter_server>=2.4.0,<3",
     "jupyterlab>=4.0.0,<5",
-    "aioboto3>=15.4.0,<16"
+    "aioboto3>=13.0.0"
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 
@@ -107,10 +107,10 @@ test = { features = ["test"], solve-group = "default" }
 
 [tool.pixi.tasks]
 build = "jlpm run build"
+watch = "jlpm run watch"
 lab = "jupyter lab"
 
+# Core system dependencies for Pixi environment
 [tool.pixi.dependencies]
 python = ">=3.10,<3.13"
-jupyterlab = ">=4.5.1,<5"
-aioboto3 = ">=15.4.0,<16"
-amazon-braket-sdk = ">=1.86.0,<2"
+nodejs = ">=18"
