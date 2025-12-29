@@ -503,9 +503,12 @@ def setup_route_handlers(web_app):
     host_pattern = ".*$"
     base_url = web_app.settings["base_url"]
 
-    devices_route_pattern = url_path_join(base_url, "jupyterlab-braket-devices", "devices")
-    status_route_pattern = url_path_join(base_url, "jupyterlab-braket-devices", "devices", "status")
+    # Use explicit regex patterns with anchors to avoid route conflicts
+    # The /?$ allows optional trailing slash and ensures exact matching
+    devices_route_pattern = url_path_join(base_url, "jupyterlab-braket-devices", "devices") + "/?$"
+    status_route_pattern = url_path_join(base_url, "jupyterlab-braket-devices", "devices", "status") + "/?$"
 
+    # Register more specific routes first (status before devices)
     handlers = [
         (status_route_pattern, DeviceStatusRouteHandler),
         (devices_route_pattern, DevicesRouteHandler)
